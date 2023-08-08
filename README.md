@@ -1,5 +1,7 @@
 # MindFlare GPT: Personality Test
 
+![](MindFlare.png)
+
 ## Introduction
 
 The purpose of this report is to provide an analysis of a Python script designed for implementing a personality test within recruitment settings. The script incorporates various libraries, including NumPy, Matplotlib, tkinter, Pillow, fpdf, and OpenAI, to create an interactive user interface for assessing responses related to different personality dimensions. This report offers a comprehensive understanding of the script's functionality and its potential applications in the realm of recruitment.
