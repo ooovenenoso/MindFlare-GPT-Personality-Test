@@ -1,12 +1,12 @@
+
 import numpy as np
 import matplotlib.pyplot as plt
-import csv
-from tkinter import Tk, Label, Button, Scale, messagebox
+from tkinter import Tk, Label, Button, Scale, messagebox, ttk
 from PIL import Image, ImageDraw, ImageFont
 from fpdf import FPDF
 import openai
 
-openai.api_key = "sk-vAMH..."
+openai.api_key = "sk-vA..."
 
 # Preguntas y respuestas
 questions = {
@@ -87,8 +87,10 @@ answers = {}
 current_question = 0
 
 def next_question():
+    save_answer()
     global current_question
-    if current_question < len(list(questions.keys())) * 12:
+    total_questions = sum(len(v) for v in questions.values())
+    if current_question < total_questions - 1:  # Asegurarse de que no excedamos el total de preguntas
         category_index = current_question // 12
         category = list(questions.keys())[category_index]
         question = questions[category][current_question % 12]
@@ -96,6 +98,17 @@ def next_question():
         current_question += 1
     else:
         messagebox.showinfo("Test de Personalidad", "¡Has completado todas las preguntas!")
+
+def save_answer():
+    global current_question, answers
+    category_index = current_question // 12
+    if category_index >= len(questions):  # Asegurarse de que no excedamos el número de categorías
+        return
+    category = list(questions.keys())[category_index]
+    answer = scale.get()
+    if category not in answers:
+        answers[category] = []
+    answers[category].append(answer)
 
 def previous_question():
     global current_question
@@ -106,103 +119,110 @@ def previous_question():
         question = questions[category][current_question % 12]
         question_label.config(text=question)
 
-def finish_test():
-    if len(answers) == 0:
-        messagebox.showerror("Test de Personalidad", "No has respondido ninguna pregunta.")
-        return
-    summary = generate_summary()
-    generate_pdf_with_summary(summary)
-
-def reset_test():
-    global current_question, answers
-    current_question = 0
-    answers = {}
-    question_label.config(text="Presiona Siguiente para comenzar el test.")
-
-def save_answer():
-    global current_question, answers
-    category_index = (current_question - 1) // 12
-    category = list(questions.keys())[category_index]
-    answer = scale.get()
-    if category not in answers:
-        answers[category] = []
-    answers[category].append(answer)
-    next_question()
 
 def generate_summary():
-    all_answers = []
-    for category, category_answers in answers.items():
-        all_answers.append(f"{category}: {', '.join(str(answer) for answer in category_answers)}")
-    prompt = "\n".join(all_answers)
+    summary_window = Tk()
+    summary_window.title("Resumen del Test de Personalidad")
+    
+    # Calcular el resumen (promedio de las respuestas para cada categoría)
+    summary_text = "Resumen de tus respuestas:\n\n"
+    for category, scores in answers.items():
+        avg_score = sum(scores) / len(scores)
+        summary_text += f"{category}: {avg_score:.2f}/7\n"
+    
+    Label(summary_window, text=summary_text, font=("Arial", 12)).pack(pady=20)
+    
+    Button(summary_window, text="Guardar como PDF", command=lambda: generate_pdf_with_summary(summary_text)).pack(pady=10)
+    Button(summary_window, text="Ver en Gráfico", command=generate_graph).pack(pady=10)
+    Button(summary_window, text="Cerrar", command=summary_window.destroy).pack(pady=10)
 
-    response = openai.Completion.create(
-        engine="davinci",
-        prompt=prompt,
-        temperature=0.7,
-        max_tokens=100
+def get_openai_summary(answers):
+    # Convertir las respuestas en texto
+    text = "\n".join([f"{cat}: {sum(answers[cat]) / len(answers[cat])}" for cat in answers])
+
+    # Solicitar a OpenAI un análisis detallado en español
+    prompt_text = f"""
+    Basado en los siguientes resultados del Test de Personalidad, proporciona un análisis detallado para ayudar al reclutador a entender las características del candidato:
+    {text}
+    """
+
+    messages = [{"role": "system", "content": "Estás analizando resultados de un Test de Personalidad."},
+                {"role": "user", "content": prompt_text}]
+    
+    response = openai.ChatCompletion.create(
+      model="gpt-3.5-turbo",
+      messages=messages
     )
-    summary = response.choices[0].text.strip()
 
-    return summary
-
-def generate_graph():
-    labels = list(questions.keys())
-    values = [np.mean(answers.get(category, [0])) for category in labels]
-
-    angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
-    values = np.concatenate((values, [values[0]]))
-    angles = np.concatenate((angles, [angles[0]]))
-
-    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw={'polar': True})
-    ax.plot(angles, values)
-    ax.fill(angles, values, alpha=0.25)
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(labels)
-    ax.set_yticklabels([])
-    ax.set_title("Resultado del Test de Personalidad")
-
-    plt.savefig("graph.png")
-    plt.close()
+    # La respuesta del modelo estará en el último mensaje enviado por "asistente"
+    return response.choices[0].message['content'].strip()
 
 def generate_pdf_with_summary(summary):
-    generate_graph()
-
-    image = Image.open("graph.png")
-    width, height = image.size
-
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
+    
+    # Obtener el análisis de OpenAI
+    openai_analysis = get_openai_summary(answers)
+    pdf.multi_cell(0, 10, openai_analysis)
+    
+    # Guardar el PDF
+    filename = "analisis_test_personalidad.pdf"
+    pdf.output(filename)
+    messagebox.showinfo("Análisis generado", f"El análisis ha sido guardado como {filename}")
 
-    pdf.cell(0, 10, "Resultado del Test de Personalidad", ln=True, align="C")
-    pdf.ln(10)
+def generate_graph():
+    labels = [cat for cat in questions.keys() if cat in answers]
+    scores = [sum(answers[cat]) / len(answers[cat]) for cat in labels]
 
-    pdf.image("graph.png", x=10, y=20, w=width, h=height)
-    pdf.ln(height + 30)
+    # Configuración del gráfico de radar
+    num_vars = len(labels)
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    scores += scores[:1]  # Añadir la primera puntuación al final para cerrar el círculo
+    angles += angles[:1]  # Añadir el primer ángulo al final para cerrar el círculo
 
-    pdf.multi_cell(0, 10, summary, align="L")
-    pdf.output("result_summary.pdf")
+    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+    ax.fill(angles, scores, color='skyblue', alpha=0.25)
+    ax.plot(angles, scores, color='skyblue', linewidth=2)
+    ax.set_yticklabels([])
+    ax.set_xticks(angles[:-1])  # Excluimos el último ángulo que es el repetido
+    ax.set_xticklabels(labels)
+
+    # Establecer el título y mostrar el gráfico
+    ax.set_title("Resumen del Test de Personalidad", size=16, y=1.1)
+    plt.tight_layout()
+    plt.show()
+
+
+def update_progressbar():
+    # This is a placeholder. Actual implementation can be added.
+    pass
 
 root = Tk()
 root.title("Test de Personalidad")
 root.geometry("500x400")
+root.configure(bg="#e0e0e0")  # Color de fondo ligero
 
-question_label = Label(root, text="Presiona Siguiente para comenzar el test.")
+question_label = Label(root, text="Presiona Siguiente para comenzar el test.", bg="#e0e0e0", font=("Arial", 12))
 question_label.pack(pady=20)
 
-scale = Scale(root, from_=1, to=7, orient="horizontal")
+scale = Scale(root, from_=1, to=7, orient="horizontal", bg="#f5f5f5", sliderlength=20, width=15)
 scale.pack(pady=20)
 
-next_button = Button(root, text="Siguiente", command=save_answer)
+next_button = Button(root, text="Siguiente", command=lambda: [next_question(), update_progressbar()], bg="#4caf50", fg="white")
 next_button.pack(pady=10)
 
-previous_button = Button(root, text="Anterior", command=previous_question)
+previous_button = Button(root, text="Anterior", command=previous_question, bg="#4caf50", fg="white")
 previous_button.pack(pady=10)
 
-finish_button = Button(root, text="Finalizar", command=finish_test)
+finish_button = Button(root, text="Finalizar", command=generate_summary, bg="#ff5722", fg="white")
 finish_button.pack(pady=10)
 
-reset_button = Button(root, text="Reiniciar", command=reset_test)
+reset_button = Button(root, text="Reiniciar", command=lambda: [reset_test(), update_progressbar()], bg="#ff5722", fg="white")
 reset_button.pack(pady=10)
+
+# Barra de progreso
+progress_bar = ttk.Progressbar(root, orient="horizontal", length=300, mode="determinate")
+progress_bar.pack(pady=20)
 
 root.mainloop()
