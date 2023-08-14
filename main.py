@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tkinter import Tk, Label, Button, Scale, messagebox, ttk
+from tkinter import Tk, Label, Button, Scale, messagebox, ttk, Entry
 from PIL import Image, ImageDraw, ImageFont
 from fpdf import FPDF
 import openai
@@ -85,6 +85,34 @@ questions = {
 answers = {}
 current_question = 0
 
+user_name = ""
+user_age = ""
+
+def collect_name_and_age():
+    def submit():
+        global user_name, user_age
+        user_name = name_entry.get()
+        user_age = age_entry.get()
+        user_info_window.destroy()
+
+    user_info_window = Tk()
+    user_info_window.title("Ingrese su Nombre y Edad")
+
+    name_label = Label(user_info_window, text="Nombre Completo:")
+    name_label.pack()
+    name_entry = Entry(user_info_window)
+    name_entry.pack()
+
+    age_label = Label(user_info_window, text="Edad:")
+    age_label.pack()
+    age_entry = Entry(user_info_window)
+    age_entry.pack()
+
+    submit_button = Button(user_info_window, text="Enviar", command=submit)
+    submit_button.pack()
+
+    user_info_window.mainloop()
+
 def next_question():
     save_answer()
     global current_question
@@ -111,12 +139,19 @@ def save_answer():
 
 def previous_question():
     global current_question
-    current_question -= 1
-    if current_question >= 0:
+    if current_question > 0:
+        current_question -= 1
         category_index = current_question // 12
         category = list(questions.keys())[category_index]
         question = questions[category][current_question % 12]
         question_label.config(text=question)
+        
+        # Restaurar la respuesta previamente guardada en la escala
+        previous_answer = answers[category][current_question % 12]
+        scale.set(previous_answer)
+    else:
+        messagebox.showinfo("Test de Personalidad", "Ya estás en la primera pregunta.")
+
 
 
 def generate_summary():
@@ -156,40 +191,102 @@ def get_openai_summary(answers):
     # La respuesta del modelo estará en el último mensaje enviado por "asistente"
     return response.choices[0].message['content'].strip()
 
+class MyPDF(FPDF):
+    def header(self):
+        # Ruta de la imagen de fondo
+        background_image = "background.png"
+
+        # Obtener las dimensiones de la imagen (en mm)
+        image_width, image_height = self.get_image_dimensions(background_image)
+
+        # Calcular las coordenadas x e y para centrar la imagen
+        x_centered = (self.w - image_width) * 0.5
+        y_centered = (self.h - image_height) * 0.5
+
+        # Agregar la imagen de fondo en cada página, centrada
+        self.image(background_image, x=x_centered, y=y_centered, w=image_width)
+
+    def get_image_dimensions(self, image_path):
+        # Usar la librería PIL para obtener las dimensiones de la imagen en píxeles
+        with Image.open(image_path) as img:
+            width_px, height_px = img.size
+
+        # Convertir las dimensiones de píxeles a milímetros (asumiendo 96 DPI)
+        width_mm = width_px * 25.4 / 96
+        height_mm = height_px * 25.4 / 96
+
+        return width_mm, height_mm
+
 def generate_pdf_with_summary(summary):
-    pdf = FPDF()
+    pdf = MyPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    
+
+    pdf.set_font("Arial", 'B', size=16)  # Fuente en negrita y tamaño 16
+
+    # Título del PDF
+    pdf.cell(0, 10, "Análisis del Test de Personalidad", ln=True, align="C")
+
+    # Escribir el nombre y la edad en el PDF
+    pdf.set_font("Arial", size=12)  # Cambiar la fuente a tamaño 12
+    pdf.cell(0, 10, f"Nombre: {user_name}", ln=True)
+    pdf.cell(0, 10, f"Edad: {user_age}", ln=True)
+    pdf.ln(10)  # Agregar una línea en blanco como separación
+
     # Obtener el análisis de OpenAI
     openai_analysis = get_openai_summary(answers)
     pdf.multi_cell(0, 10, openai_analysis)
-    
+
+    # Agregar la imagen del gráfico
+    image_path = "personalidad.png"  # Ruta de la imagen del gráfico
+    pdf.image(image_path, x=10, y=None, w=190)  # Ajusta el tamaño (w) según tus necesidades
+
     # Guardar el PDF
     filename = "analisis_test_personalidad.pdf"
     pdf.output(filename)
     messagebox.showinfo("Análisis generado", f"El análisis ha sido guardado como {filename}")
 
+
 def generate_graph():
     labels = [cat for cat in questions.keys() if cat in answers]
     scores = [sum(answers[cat]) / len(answers[cat]) for cat in labels]
-
-    # Configuración del gráfico de radar
     num_vars = len(labels)
+    
+    # Configuración del gráfico de radar
     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
     scores += scores[:1]  # Añadir la primera puntuación al final para cerrar el círculo
     angles += angles[:1]  # Añadir el primer ángulo al final para cerrar el círculo
 
-    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
-    ax.fill(angles, scores, color='skyblue', alpha=0.25)
-    ax.plot(angles, scores, color='skyblue', linewidth=2)
-    ax.set_yticklabels([])
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+    
+    # Colores personalizados
+    fill_color = '#2899c0'
+    line_color = '#ca4124'
+    label_color = '#c09660'
+    
+    # Gráfico principal
+    ax.fill(angles, scores, color=fill_color, alpha=0.6)  # Color de relleno
+    ax.plot(angles, scores, color=line_color, linewidth=3)  # Color de la línea
+    
+    # Configuración de etiquetas y títulos
+    ax.set_yticks(range(1, 8))
+    ax.set_yticklabels(range(1, 8), fontsize=12, color=label_color)  # Color de las etiquetas de puntuación
     ax.set_xticks(angles[:-1])  # Excluimos el último ángulo que es el repetido
-    ax.set_xticklabels(labels)
-
-    # Establecer el título y mostrar el gráfico
-    ax.set_title("Resumen del Test de Personalidad", size=16, y=1.1)
+    ax.set_xticklabels(labels, fontsize=14, fontweight='bold', color=label_color)  # Color de las etiquetas de categoría
+    
+    # Añadir líneas de cuadrícula y configurar el fondo
+    ax.grid(color='grey', linestyle='--', linewidth=0.5, alpha=0.6)
+    ax.set_facecolor('whitesmoke')  # Color de fondo del gráfico
+    
+    # Establecer el título
+    ax.set_title("Resumen del Test de Personalidad", size=20, y=1.1, color=line_color, fontweight='bold')  # Color y tamaño del título
+    
     plt.tight_layout()
+    
+    # Guardar la imagen del gráfico
+    image_path = "personalidad.png"
+    fig.savefig(image_path, dpi=300, bbox_inches='tight')  # Aumentar la resolución y ajustar el tamaño
+    
+    # Mostrar el gráfico
     plt.show()
 
 
@@ -198,6 +295,15 @@ def update_progressbar():
     percentage_complete = (current_question / total_questions) * 100
     progress_bar['value'] = percentage_complete
 
+def reset_test():
+    global answers, current_question
+    answers = {}  # Reiniciar las respuestas
+    current_question = 0  # Reiniciar el contador de preguntas
+    question_label.config(text="Presiona Siguiente para comenzar el test.")  # Reiniciar el texto de la etiqueta de pregunta
+    scale.set(0)  # Reiniciar la escala
+
+# Recopilar nombre y edad antes de comenzar el test
+collect_name_and_age()
 
 root = Tk()
 root.title("Test de Personalidad")
