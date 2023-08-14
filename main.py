@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from tkinter import Tk, Label, Button, Scale, messagebox, ttk, Entry
 from PIL import Image, ImageDraw, ImageFont
 from fpdf import FPDF
+from datetime import datetime
 import openai
 
 openai.api_key = "API_KEY_OPENAI"
@@ -230,7 +231,11 @@ def generate_pdf_with_summary(summary):
     pdf.set_font("Arial", size=12)  # Cambiar la fuente a tamaño 12
     pdf.cell(0, 10, f"Nombre: {user_name}", ln=True)
     pdf.cell(0, 10, f"Edad: {user_age}", ln=True)
-    pdf.ln(10)  # Agregar una línea en blanco como separación
+    # Obtener la fecha y hora actual
+    current_date_time = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+    pdf.cell(0, 10, f"Fecha y Hora: {current_date_time}", ln=True)  # Añadir al PDF
+
+    pdf.ln(10)
 
     # Obtener el análisis de OpenAI
     openai_analysis = get_openai_summary(answers)
