@@ -4,7 +4,7 @@
 
 ## Introduction
 
-The purpose of this report is to provide an analysis of a Python script designed for implementing a personality test within recruitment settings. The script incorporates various libraries, including NumPy, Matplotlib, tkinter, Pillow, fpdf, and OpenAI, to create an interactive user interface for assessing responses related to different personality dimensions. This report offers a comprehensive understanding of the script's functionality and its potential applications in the realm of recruitment.
+The purpose of this report is to provide an analysis of a Python script designed to implement a personality test within recruitment settings. The script incorporates various libraries, including NumPy, Matplotlib, tkinter, Pillow, fpdf, and OpenAI, to create an interactive user interface for assessing responses related to different personality dimensions. This report offers a comprehensive understanding of the script's functionality and its potential applications in the realm of recruitment.
 
 ## Purpose and Functionality
 
@@ -20,7 +20,23 @@ User responses are systematically organized and stored in a dictionary labeled "
 
 ## Summary Generation
 
-The script leverages the OpenAI API to generate a concise summary based on the accumulated responses. By collating and structuring the collected data, the script generates a coherent summary that encapsulates the user's personality traits.
+The summary generation is a key feature of the script that utilizes the OpenAI API to create an insightful summary of the accumulated responses. This process includes:
+
+### Data Collation
+
+The script gathers and structures the collected data, including the scores for each personality dimension. This data serves as the input for generating a coherent summary that encapsulates the user's personality traits.
+
+### Integration with OpenAI
+
+The script leverages OpenAI's cutting-edge models to interpret the collated data. By inputting the data into OpenAI's models, the script provides an intelligent and human-like analysis that translates the scores into meaningful insights.
+
+### Customization and Tailoring
+
+The interaction with OpenAI is customizable, allowing for adjustments based on specific needs or criteria. This adaptability ensures that the summary can align with different recruitment scenarios or assessment frameworks.
+
+### Conclusion of Summary Generation
+
+The summary generation feature is instrumental in translating raw scores into actionable insights. It combines data collation, advanced AI analysis, and customization to provide a valuable tool for understanding personality traits in the recruitment context. This feature enhances the script's functionality, contributing to a comprehensive and nuanced evaluation of candidates.
 
 ## Graphical Representation
 
@@ -28,7 +44,7 @@ The script produces a visual representation of the results by generating a polar
 
 ## PDF Generation
 
-The script's functionality extends to creating a detailed PDF report. This report encompasses the response summary and the graphical representation of the personality traits. The fpdf library ensures that the PDF document is meticulously formatted.
+The script's functionality extends to creating a detailed PDF report. This report encompasses the response summary and the graphical representation of the personality traits. The fpdf library ensures that the PDF document is meticulously formatted, and the class `MyPDF` allows customization such as adding a background image.
 
 ## Potential Applications in Recruitment
 
@@ -40,7 +56,7 @@ When implementing this script in a recruitment context, adherence to privacy and
 
 ## Enhancements and Customization
 
-Further enhancements could involve expanding the question set, tailoring questions to specific job roles, and incorporating advanced result analysis, such as correlations with job performance. Additionally, the script could be adapted to generate individualized reports for each candidate.
+Further enhancements could involve expanding the question set, tailoring questions to specific job roles, and incorporating advanced result analysis, such as correlations with job performance. Additionally, the script could be adapted to generate individualized reports for each candidate, including integration of images and custom styles in the PDF.
 
 ## Conclusion
 
