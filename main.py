@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 from tkinter import Tk, Label, Button, Scale, messagebox, ttk
@@ -6,7 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 from fpdf import FPDF
 import openai
 
-openai.api_key = "sk-vA..."
+openai.api_key = "API_KEY_OPENAI"
 
 # Preguntas y respuestas
 questions = {
@@ -195,8 +194,10 @@ def generate_graph():
 
 
 def update_progressbar():
-    # This is a placeholder. Actual implementation can be added.
-    pass
+    total_questions = sum(len(v) for v in questions.values())
+    percentage_complete = (current_question / total_questions) * 100
+    progress_bar['value'] = percentage_complete
+
 
 root = Tk()
 root.title("Test de Personalidad")
