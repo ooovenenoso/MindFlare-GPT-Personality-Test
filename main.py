@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tkinter import Tk, Label, Button, Scale, messagebox, ttk, Entry
+from tkinter import Tk, Label, Button, Scale, messagebox, ttk, Entry, Frame
 from PIL import Image, ImageDraw, ImageFont
 from fpdf import FPDF
 from datetime import datetime
@@ -8,7 +8,7 @@ import openai
 
 openai.api_key = "API_KEY_OPENAI"
 
-# Preguntas y respuestas
+# Preguntas
 questions = {
     "Apertura a la experiencia": [
         "Me gusta probar cosas nuevas y diferentes.",
@@ -89,6 +89,9 @@ current_question = 0
 user_name = ""
 user_age = ""
 
+# Preguntas y respuestas y demás funciones se mantienen igual...
+
+# Ventana para recopilar nombre y edad
 def collect_name_and_age():
     def submit():
         global user_name, user_age
@@ -98,19 +101,20 @@ def collect_name_and_age():
 
     user_info_window = Tk()
     user_info_window.title("Ingrese su Nombre y Edad")
+    user_info_window.configure(bg="#f5f5f5")
 
-    name_label = Label(user_info_window, text="Nombre Completo:")
-    name_label.pack()
-    name_entry = Entry(user_info_window)
-    name_entry.pack()
+    name_label = Label(user_info_window, text="Nombre Completo:", bg="#f5f5f5", font=("Helvetica", 10))
+    name_label.pack(pady=10)
+    name_entry = Entry(user_info_window, font=("Helvetica", 10))
+    name_entry.pack(pady=10)
 
-    age_label = Label(user_info_window, text="Edad:")
-    age_label.pack()
-    age_entry = Entry(user_info_window)
-    age_entry.pack()
+    age_label = Label(user_info_window, text="Edad:", bg="#f5f5f5", font=("Helvetica", 10))
+    age_label.pack(pady=10)
+    age_entry = Entry(user_info_window, font=("Helvetica", 10))
+    age_entry.pack(pady=10)
 
-    submit_button = Button(user_info_window, text="Enviar", command=submit)
-    submit_button.pack()
+    submit_button = Button(user_info_window, text="Enviar", command=submit, bg="#4caf50", fg="white", relief="flat", font=("Helvetica", 10))
+    submit_button.pack(pady=10)
 
     user_info_window.mainloop()
 
@@ -152,8 +156,6 @@ def previous_question():
         scale.set(previous_answer)
     else:
         messagebox.showinfo("Test de Personalidad", "Ya estás en la primera pregunta.")
-
-
 
 def generate_summary():
     summary_window = Tk()
@@ -250,7 +252,6 @@ def generate_pdf_with_summary(summary):
     pdf.output(filename)
     messagebox.showinfo("Análisis generado", f"El análisis ha sido guardado como {filename}")
 
-
 def generate_graph():
     labels = [cat for cat in questions.keys() if cat in answers]
     scores = [sum(answers[cat]) / len(answers[cat]) for cat in labels]
@@ -294,7 +295,6 @@ def generate_graph():
     # Mostrar el gráfico
     plt.show()
 
-
 def update_progressbar():
     total_questions = sum(len(v) for v in questions.values())
     percentage_complete = (current_question / total_questions) * 100
@@ -310,31 +310,47 @@ def reset_test():
 # Recopilar nombre y edad antes de comenzar el test
 collect_name_and_age()
 
+# Ventana principal
 root = Tk()
 root.title("Test de Personalidad")
-root.geometry("500x400")
-root.configure(bg="#e0e0e0")  # Color de fondo ligero
+root.geometry("700x500")
+root.configure(bg="#f5f5f5")  # Fondo moderno
 
-question_label = Label(root, text="Presiona Siguiente para comenzar el test.", bg="#e0e0e0", font=("Arial", 12))
+question_label = Label(root, text="Presiona Siguiente para comenzar el test.", bg="#f5f5f5", font=("Helvetica", 14), fg="#333333")
 question_label.pack(pady=20)
 
-scale = Scale(root, from_=1, to=7, orient="horizontal", bg="#f5f5f5", sliderlength=20, width=15)
-scale.pack(pady=20)
+# Escala y etiquetas
+scale_frame = Frame(root, bg="#f5f5f5")
+scale_frame.pack(pady=10)
 
-next_button = Button(root, text="Siguiente", command=lambda: [next_question(), update_progressbar()], bg="#4caf50", fg="white")
-next_button.pack(pady=10)
+left_reference_label = Label(scale_frame, text="No me identifico", bg="#f5f5f5", font=("Helvetica", 10), fg="#555555")
+left_reference_label.pack(side="left", padx=5)
 
-previous_button = Button(root, text="Anterior", command=previous_question, bg="#4caf50", fg="white")
-previous_button.pack(pady=10)
+scale = Scale(scale_frame, from_=1, to=7, orient="horizontal", bg="#e0e0e0", sliderlength=30, width=15, highlightthickness=0)
+scale.pack(side="left", pady=20)
 
-finish_button = Button(root, text="Finalizar", command=generate_summary, bg="#ff5722", fg="white")
-finish_button.pack(pady=10)
+right_reference_label = Label(scale_frame, text="Me identifico totalmente", bg="#f5f5f5", font=("Helvetica", 10), fg="#555555")
+right_reference_label.pack(side="left", padx=5)
 
-reset_button = Button(root, text="Reiniciar", command=lambda: [reset_test(), update_progressbar()], bg="#ff5722", fg="white")
-reset_button.pack(pady=10)
+# Botones
+button_frame = Frame(root, bg="#f5f5f5")
+button_frame.pack(pady=10)
+
+next_button = Button(button_frame, text="Siguiente", command=lambda: [next_question(), update_progressbar()], bg="#4caf50", fg="white", relief="flat", font=("Helvetica", 10))
+next_button.pack(side="left", padx=5)
+
+previous_button = Button(button_frame, text="Anterior", command=previous_question, bg="#9e9e9e", fg="white", relief="flat", font=("Helvetica", 10))
+previous_button.pack(side="left", padx=5)
+
+finish_button = Button(button_frame, text="Finalizar", command=generate_summary, bg="#ff5722", fg="white", relief="flat", font=("Helvetica", 10))
+finish_button.pack(side="left", padx=5)
+
+reset_button = Button(button_frame, text="Reiniciar", command=lambda: [reset_test(), update_progressbar()], bg="#607d8b", fg="white", relief="flat", font=("Helvetica", 10))
+reset_button.pack(side="left", padx=5)
 
 # Barra de progreso
-progress_bar = ttk.Progressbar(root, orient="horizontal", length=300, mode="determinate")
+progress_bar = ttk.Progressbar(root, orient="horizontal", length=600, mode="determinate", style="TProgressbar")
 progress_bar.pack(pady=20)
 
 root.mainloop()
+
