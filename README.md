@@ -10,6 +10,8 @@ The purpose of this report is to provide an analysis of a Python script designed
 
 The primary objective of the script is to evaluate relevant personality traits in the context of recruitment for professional environments. By utilizing a series of tailored questions, the script measures traits such as Openness to Experience, Conscientiousness, Extraversion, Agreeableness, and Neuroticism, assigning scores on a scale ranging from 1 to 7 for each question.
 
+<img src="MindFlareSlide.gif" width="600">
+
 ## User Interface
 
 The script generates a user-friendly interface through the tkinter library, providing interactive buttons and a horizontal scale to facilitate question responses. This design ensures a seamless flow, allowing users to navigate through the test with ease.
